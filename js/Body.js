@@ -40,6 +40,12 @@ class Body{
     }
 };
 
+function isBodyDuplicate(midpoint, arr){
+    for(mp of arr){
+        if(dist(midpoint.x, midpoint.y, mp.x, mp.y)  < 200) return true;
+    }
+    return false;
+}
 
 function getPosenetBodies() {
 
@@ -50,11 +56,13 @@ function getPosenetBodies() {
         let p = pose.pose;
 
         let midpoint = computeMidPoint(p.leftShoulder, p.rightShoulder);
-        if(midpoint === null) continue;
+        if(midpoint === null) continue;      
 
-       
+        if(isBodyDuplicate(midpoint, midpoints)) continue;
 
         bodies.push(new Body(midpoint, p))
+        midpoints.push(midpoint);
+
     }
 
     return bodies;
