@@ -1,8 +1,13 @@
-const POSENET_CONFIDENCE_THRESHOLD = 0.8;
-const HAND_BOUNDING_DIAMETER = 100;
-const BODY_DUPLICATE_TOLERANCE = 200;
 const CANVAS_WIDTH = 640;
 const CANVAS_HEIGHT = 480;
+
+const DRAW_SKELETON = false;
+const DRAW_CAMERA_INPUT = true;
+
+const POSENET_CONFIDENCE_THRESHOLD = 0.5;
+const HAND_BOUNDING_DIAMETER = 100;
+const BODY_DUPLICATE_TOLERANCE = 200;
+const ERROR_COUNTER_LIMIT = 200;
 
 let initialized = false;
 
@@ -32,18 +37,16 @@ function setup() {
         console.error(error);
     }
     
-
     poseNet = ml5.poseNet(video, modelReady);
     poseNet.on('pose', function(results) {
         poses = results;
     });
 
-
     ball = new Ball(width / 2, 0);
 }
 
 function modelReady() {
-  console.log('Model Loaded!');
+    console.log('Model Loaded!');
 }
 
 function draw() {
@@ -64,7 +67,8 @@ function draw() {
     push()
     translate(width, 0);
     scale(-1, 1);
-    image(video, 0, 0, width, height);
+
+    if(DRAW_CAMERA_INPUT) image(video, 0, 0, width, height);
     
     let newBodies = getPosenetBodies();
     
@@ -76,20 +80,14 @@ function draw() {
         errorCounter = 0;
     }
 
-    if(errorCounter < 200){
+    //Prevent the random disappearance of body between frames.
+    if(errorCounter < ERROR_COUNTER_LIMIT){
 
         for(const body of bodies){
 
-            for (let limb in body.limbs){
-                drawLimb(body.limbs[limb]);
-            };
-
-            let head = body.head;
-
-            noStroke();
-            fill(255);
-            circle(head.x, head.y, head.diameter);
-
+            if(DRAW_SKELETON){
+                body.draw();
+            }
 
             let leftHand = new Hand(body.limbs.leftForearm, 'left');
             let rightHand = new Hand(body.limbs.rightForearm, 'right');
@@ -102,7 +100,10 @@ function draw() {
                 if(!stillInLeftHand){
 
                     ball.bounce(leftHand.pos);
-                    whichHand = leftHand.switchTargetHand(whichHand);
+                    [whichHand, addScore] = leftHand.countHandBounce(whichHand);
+
+                    if(addScore) score++;
+                    else score = 0;
                 }
 
                 stillInLeftHand = true;
@@ -116,7 +117,10 @@ function draw() {
                 if(!stillInRightHand){
 
                     ball.bounce(rightHand.pos);
-                    whichHand = rightHand.switchTargetHand(whichHand);
+                    [whichHand, addScore] = rightHand.countHandBounce(whichHand);
+
+                    if(addScore) score++;
+                    else score = 0;
                 }
 
                 stillInRightHand = true;
@@ -144,11 +148,8 @@ function draw() {
     pop();
 
     noStroke();
-    fill(255);
+    fill(255 * DRAW_CAMERA_INPUT);
     textSize(48);
     textAlign(LEFT)
     text(score, 30, 30+36);
 }
-
-
-

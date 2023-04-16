@@ -2,7 +2,7 @@ class Hand{
     constructor(forearm, whichHand){
         this.wrist = createVector(forearm.end.x, forearm.end.y);
         
-        this.pos = forearm.v.copy();
+        this.pos = forearm.vec.copy();
         this.pos.normalize();
         this.pos.setMag(HAND_BOUNDING_DIAMETER / 2);
         this.pos.add(this.wrist);
@@ -15,19 +15,32 @@ class Hand{
         return dist(this.pos.x, this.pos.y, ball.pos.x, ball.pos.y) <= HAND_BOUNDING_DIAMETER
     }
 
-    switchTargetHand(targetHand){
+    /**
+     * Check bounces if they are correct. Otherwise reset the score and target hand.
+     * @param {vector} targetHand hand which should bounce the ball to follow the order.
+     * @returns newTarget: new hand targed, set to null if we lost the correct order.
+     * addScore: should I add score or reset?
+     */
+
+    countHandBounce(targetHand){
+
+        let newTarget;
+        let addScore;
+
         if(targetHand === null){
-            score++;
-            return this.hand;
+            addScore = true;
+            newTarget = this.hand;
         }
         else if(this.hand === targetHand){
-            score = 0;
-            return null;
+            addScore = false;
+            newTarget = null;
         }
         else if(this.hand !== targetHand){
-            score++;
-            return !targetHand;
+            addScore = true;
+            newTarget = !targetHand;
         }
+
+        return [newTarget, addScore];
     }
 
     draw(){

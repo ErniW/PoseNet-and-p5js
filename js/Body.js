@@ -1,7 +1,7 @@
 let Limb = function(start, end){
     this.start = start;
     this.end = end;
-    this.v = computeVector(start, end);
+    this.vec = computeVector(start, end);
 }
 
 class Body{
@@ -37,14 +37,22 @@ class Body{
             'diameter': Math.abs(pose.leftEar.x - pose.rightEar.x) * 1.2
         }        
     }
+
+    draw(){
+        for (let limb in this.limbs){
+            drawLimb(this.limbs[limb]);
+        };
+
+        noStroke();             
+        fill(255 * DRAW_CAMERA_INPUT);
+        circle(this.head.x, this.head.y, this.head.diameter);
+    }
 };
 
-function isBodyDuplicate(midpoint, arr){
-    for(mp of arr){
-        if(dist(midpoint.x, midpoint.y, mp.x, mp.y) < BODY_DUPLICATE_TOLERANCE) return true;
-    }
-    return false;
-}
+/**
+ * Retreive and parse poseNet skeletons into body object that consists of vectors.
+ * @returns Parsed bodies list of Body class
+ */
 
 function getPosenetBodies() {
 
@@ -67,6 +75,12 @@ function getPosenetBodies() {
     return bodies;
 }
 
+/**
+ * Compute vector from poseNET skeleton points
+ * @param {vector} start beginning of the limb
+ * @param {vector} end end of the limb
+ * @returns vector of a limb.
+ */
 
 function computeVector(start, end){   
     return createVector(end.x-start.x, end.y - start.y);
@@ -74,16 +88,43 @@ function computeVector(start, end){
 
 
 function drawLimb(limb){
-    stroke(255);
+    
+    stroke(255 * DRAW_CAMERA_INPUT);
     strokeWeight(40);
     line(limb.start.x, limb.start.y, limb.end.x, limb.end.y);
 }
 
+/**
+ * Check if prediction is strong in the midpoin of body.
+ * @param {*} a left shoulder 
+ * @param {*} b right houlder
+ * @returns True if prediction is above POSENET_CONFIDENCE_THRESHOLD
+ */
 
 function predictionConfidence(a, b){
     return (a.confidence > POSENET_CONFIDENCE_THRESHOLD && b.confidence > POSENET_CONFIDENCE_THRESHOLD);
 }
 
+/**
+ * Check if this body is an duplicate.
+ * @param {vector} midpoint Currently tested body's midpoint
+ * @param {vector} arr Array of midpoints
+ * @returns True if it's a duplicate. False otherwise.
+ */
+
+function isBodyDuplicate(midpoint, arr){
+    for(mp of arr){
+        if(dist(midpoint.x, midpoint.y, mp.x, mp.y) < BODY_DUPLICATE_TOLERANCE) return true;
+    }
+    return false;
+}
+
+/**
+ * Generates the pose midpoint between shoulders which is important for parsed skeleton.
+ * @param {vector} a left shoulder
+ * @param {vector} b right shoulder
+ * @returns Midpoint x and y coords.
+ */
 
 function computeMidPoint(a, b){
 
