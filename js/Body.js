@@ -43,13 +43,17 @@ class Body{
 
 function getPosenetBodies() {
 
-    let bodies = []
+    let bodies = [];
+    let midpoints = [];
 
     for(let pose of poses){
         let p = pose.pose;
 
         let midpoint = computeMidPoint(p.leftShoulder, p.rightShoulder);
         if(midpoint === null) continue;
+
+       
+
         bodies.push(new Body(midpoint, p))
     }
 
