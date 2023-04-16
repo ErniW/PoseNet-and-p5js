@@ -13,7 +13,7 @@ class Body{
         if(lowerBodyMidpoint === null && bodyMidpoint !== null){
             lowerBodyMidpoint = {
                 "x": bodyMidpoint.x, 
-                "y": height
+                "y": height + 300
             }
         }
 
@@ -35,14 +35,13 @@ class Body{
             'x': pose.nose.x,
             'y': pose.nose.y,
             'diameter': Math.abs(pose.leftEar.x - pose.rightEar.x) * 1.2
-        }
-        
+        }        
     }
 };
 
 function isBodyDuplicate(midpoint, arr){
     for(mp of arr){
-        if(dist(midpoint.x, midpoint.y, mp.x, mp.y)  < 200) return true;
+        if(dist(midpoint.x, midpoint.y, mp.x, mp.y) < BODY_DUPLICATE_TOLERANCE) return true;
     }
     return false;
 }
@@ -69,13 +68,8 @@ function getPosenetBodies() {
 }
 
 
-function computeVector(start, end){
-
-    if(!predictionConfidence(start, end)) return null;
-
-    let vec = createVector(end.x-start.x, end.y - start.y);
-
-    return vec;
+function computeVector(start, end){   
+    return createVector(end.x-start.x, end.y - start.y);
 }
 
 
@@ -87,7 +81,7 @@ function drawLimb(limb){
 
 
 function predictionConfidence(a, b){
-    return (a.confidence > 0.5 && b.confidence > 0.5);
+    return (a.confidence > POSENET_CONFIDENCE_THRESHOLD && b.confidence > POSENET_CONFIDENCE_THRESHOLD);
 }
 
 

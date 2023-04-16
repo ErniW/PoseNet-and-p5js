@@ -1,23 +1,37 @@
+const POSENET_CONFIDENCE_THRESHOLD = 0.8;
+const HAND_BOUNDING_DIAMETER = 100;
+const BODY_DUPLICATE_TOLERANCE = 200;
+const CANVAS_WIDTH = 640;
+const CANVAS_HEIGHT = 480;
+
+let initialized = false;
+
 let video;
 let poseNet;
 
 let poses = [];
 let bodies = [];
-
-let errorCounter = 0;
 let ball;
 
-let initialized = false;
+let whichHand = null;
+let stillInLeftHand = false;
+let stillInRightHand = false;
+let score = 0;
+
+let errorCounter = 0;
 
 function setup() {
-    createCanvas(640, 480);
+    createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 
-
-    video = createCapture(VIDEO, ()=>{ initialized = true;});
-    video.size(width, height);
-    video.style.transform = "scale(-1, 1)";
-    video.hide();
-
+    try{
+        video = createCapture(VIDEO, ()=>{ initialized = true;});
+        video.size(width, height);
+        video.hide();
+    }
+    catch(error){
+        console.error(error);
+    }
+    
 
     poseNet = ml5.poseNet(video, modelReady);
     poseNet.on('pose', function(results) {
@@ -25,10 +39,7 @@ function setup() {
     });
 
 
-
     ball = new Ball(width / 2, 0);
-
-   
 }
 
 function modelReady() {
@@ -49,7 +60,8 @@ function draw() {
     }
 
     background(255);
-
+    
+    push()
     translate(width, 0);
     scale(-1, 1);
     image(video, 0, 0, width, height);
@@ -73,29 +85,45 @@ function draw() {
             };
 
             let head = body.head;
-            let leftHand = body.limbs.leftForearm.end;
-            let rightHand = body.limbs.rightForearm.end;
 
             noStroke();
             fill(255);
             circle(head.x, head.y, head.diameter);
 
-            noFill();
-            strokeWeight(4);
-            stroke(0,255,0);
-            circle(leftHand.x, leftHand.y, 100);
-            circle(rightHand.x, rightHand.y, 100);
 
-            if(dist(leftHand.x, leftHand.y, ball.pos.x, ball.pos.y) <= 100) {
-                let handVec = createVector(leftHand.x, leftHand.y);
-                ball.bounce(handVec);
+            let leftHand = new Hand(body.limbs.leftForearm, 'left');
+            let rightHand = new Hand(body.limbs.rightForearm, 'right');
+
+            leftHand.draw();
+            rightHand.draw();
+
+            if(leftHand.checkCollision(ball)){
+
+                if(!stillInLeftHand){
+
+                    ball.bounce(leftHand.pos);
+                    whichHand = leftHand.switchTargetHand(whichHand);
+                }
+
+                stillInLeftHand = true;
             }
-            
-            if(dist(rightHand.x, rightHand.y, ball.pos.x, ball.pos.y) <= 100){
-                let handVec = createVector(rightHand.x, rightHand.y);
-                ball.bounce(handVec);
-            } 
+            else{
+                stillInLeftHand = false;
+            }
 
+            if(rightHand.checkCollision(ball)){
+
+                if(!stillInRightHand){
+
+                    ball.bounce(rightHand.pos);
+                    whichHand = rightHand.switchTargetHand(whichHand);
+                }
+
+                stillInRightHand = true;
+            }
+            else{
+                stillInRightHand = false;
+            }
         }
     }
            
@@ -107,7 +135,19 @@ function draw() {
         ball.dir.rotate(-radians(Math.random()*30))
     }
 
-    if(ball.pos.y > height) ball = new Ball(width / 2,0);
+    if(ball.pos.y > height) {
+        ball = new Ball(width / 2,0);
+        score = 0;
+        whichHand = null;
+    }
+
+    pop();
+
+    noStroke();
+    fill(255);
+    textSize(48);
+    textAlign(LEFT)
+    text(score, 30, 30+36);
 }
 
 
